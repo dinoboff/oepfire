@@ -1,7 +1,7 @@
 {
-  "name": "classmentors",
+  "name": "oepfire",
   "version": "0.1.0",
-  "homepage": "https://github.com/ChrisBoesch/classmentors",
+  "homepage": "https://github.com/ChrisBoesch/oepfire",
   "main": "src/app/app.js",
   "moduleType": [
     "globals"

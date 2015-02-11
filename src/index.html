@@ -8,8 +8,8 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width">
-    <title ng-bind="page.title" ng-init="page={title: 'Online Engagement Platform', menu:  {'title': 'Menu', 'contentTemplate': 'app/components/menu/menu-view.html'}}">
-        Class Mentors
+    <title ng-bind="page.title" ng-init="page={title: 'Badge Tracker', menu:  {'title': 'Menu', 'contentTemplate': 'app/components/menu/menu-view.html'}}">
+        Badge Tracker
     </title>
 
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700' rel='stylesheet' type='text/css'>
@@ -30,6 +30,7 @@
     <link rel="stylesheet" href="app/app.css">
     <link rel="stylesheet" href="app/components/menu/menu.css">
     <link rel="stylesheet" href="app/components/navbar/navbar.css">
+    <link rel="stylesheet" href="app/components/profiles/profiles.css">
     <!-- Add Singpath Fire style sheets here.-->
 
     <!-- endbuild -->
@@ -64,6 +65,7 @@
     <!-- build:vendorJs(src) vendor.js -->
     <script src="vendor/alertifyjs/src/js/alertify.js"></script>
     <script src="vendor/crypto-js/src/core.js"></script>
+    <script src="vendor/crypto-js/src/md5.js"></script>
     <script src="vendor/crypto-js/src/hmac.js"></script>
     <script src="vendor/crypto-js/src/pbkdf2.js"></script>
     <script src="vendor/crypto-js/src/sha1.js"></script>
@@ -84,8 +86,9 @@
     <!-- build:appJs(src) app.js -->
     <script src="app/components/polyfills/object.assign.js"></script>
     <script src="app/app.js"></script>
-    <script src="app/components/events/events.js"></script>
+    <script src="app/components/profiles/profiles.js"></script>
     <script src="app/components/navbar/navbar.js"></script>
+    <script src="app/components/ranking/ranking.js"></script>
     <!-- Add Singpath Fire scripts above -->
     <!-- endbuild -->
 

@@ -25,8 +25,9 @@
    *
    */
   constant('routes', {
-    home: '/events',
-    events: '/events'
+    home: '/ranking',
+    profile: '/profile/:publicId?',
+    ranking: '/ranking'
   }).
 
   /**
@@ -208,6 +209,9 @@
     'oepFirebaseRef',
     function($q, $firebaseAuth, oepFirebaseRef) {
       var auth = $firebaseAuth(oepFirebaseRef());
+      var options = {
+        scope: 'email'
+      };
 
       return {
         // The current user auth data (null is not authenticated).
@@ -226,13 +230,13 @@
         login: function() {
           var self = this;
 
-          return auth.$authWithOAuthPopup('google').then(function(user) {
+          return auth.$authWithOAuthPopup('google', options).then(function(user) {
             self.user = user;
             return user;
           }, function(error) {
             // oepAlert.warning('You failed to authenticate with Google');
             if (error.code === 'TRANSPORT_UNAVAILABLE') {
-              return auth.$authWithOAuthRedirect('google');
+              return auth.$authWithOAuthRedirect('google', options);
             }
             return $q.reject(error);
           });
@@ -264,11 +268,12 @@
    */
   factory('oepDataStore', [
     '$q',
+    '$log',
     'oepFirebaseRef',
     'oepFirebaseSync',
     'oepAuth',
     'crypto',
-    function oepDataStoreFactory($q, oepFirebaseRef, oepFirebaseSync, oepAuth, crypto) {
+    function oepDataStoreFactory($q, $log, oepFirebaseRef, oepFirebaseSync, oepAuth, crypto) {
       var userData, userDataPromise, api;
 
       api = {
@@ -317,6 +322,8 @@
            *
            */
           register: function(userData) {
+            var gravatarBaseUrl = '//www.gravatar.com/avatar/';
+
             if (angular.isUndefined(userData)) {
               return $q.reject(new Error('A user should be logged in to register'));
             }
@@ -329,8 +336,10 @@
 
             userData.$value = {
               id: oepAuth.user.uid,
-              nickName: oepAuth.user.google.displayName,
+              fullName: oepAuth.user.google.displayName,
               displayName: oepAuth.user.google.displayName,
+              email: oepAuth.user.google.email,
+              gravatar: gravatarBaseUrl + crypto.md5(oepAuth.user.google.email),
               createdAt: {
                 '.sv': 'timestamp'
               }
@@ -339,77 +348,51 @@
             return userData.$save().then(function() {
               return userData;
             });
+          },
+
+          publicId: function(userSync) {
+            if (!userSync || !userSync.publicId) {
+              return $q.reject(new Error('The user has set his/her user id.'));
+            }
+
+            return oepFirebaseSync(['auth/publicIds']).$set(userSync.publicId, userSync.$id).then(function() {
+              return oepFirebaseSync(['auth/usedPublicIds']).$set(userSync.publicId, true);
+            }, function(err) {
+              $log.info(err);
+              return $q(new Error('Failed to save public id. It might have already being used by an other user.'));
+            }).then(function() {
+              return userSync.$save();
+            });
+          },
+
+          isPublicIdAvailable: function(publicId) {
+            return oepFirebaseSync(['auth/usedPublicIds', publicId]).$asObject().$loaded().then(function(publicIdSync) {
+              return !publicIdSync.$value;
+            });
           }
         },
 
-        classMentor: {
-          events: {
-            list: function() {
-              return oepFirebaseSync(['classMentors/events'], {
-                orderByChild: 'timestamp',
-                limitToLast: 50
-              }).$asArray();
-            },
-
-            create: function(collection, data, password) {
-              var hash, eventId;
-
-              if (!oepAuth.user || !oepAuth.user.uid) {
-                return $q.reject(new Error('A user should be logged in to create an event.'));
-              }
-
-              if (!password) {
-                return $q.reject(new Error('An event should have a password.'));
-              }
-
-              return collection.$add(data).then(function(ref) {
-                eventId = ref.key();
-                hash = crypto.password.newHash(password);
-                var opts = {
-                  hash: hash.value,
-                  options: hash.options
-                };
-                return oepFirebaseSync(['classMentors/eventPasswords']).$set(eventId, opts);
-              }).then(function() {
-                return eventId;
-              });
-            },
-
-            join: function(eventId, pw) {
-              if (!oepAuth.user || !oepAuth.user.uid) {
-                return $q.reject(new Error('A user should be logged in to create an event.'));
-              }
-
-              var paths = {
-                hashOptions: ['classMentors/eventPasswords', eventId, 'options'],
-                application: ['classMentors/eventApplications', eventId, oepAuth.user.uid],
-                participation: ['classMentors/eventParticipants', eventId, oepAuth.user.uid]
-              };
-
-              // The owner can join without password.
-              if (pw === null) {
-                return oepFirebaseSync(paths.participation).$set(true);
-              }
-
-              return oepFirebaseSync(paths.hashOptions).$asObject().$loaded().then(function(options) {
-                var hash = crypto.password.fromSalt(pw, options.$value.salt, options.$value);
-                return oepFirebaseSync(paths.application).$set(hash.value);
-              }).then(function() {
-                return oepFirebaseSync(paths.participation).$set(true);
-              });
-            }
+        oep: {
+          profile: function(publicId) {
+            return $q.when(publicId).then(function(publicId) {
+              return oepFirebaseSync(['badgeTracker/userProfiles', publicId]).$asObject().$loaded();
+            });
           },
 
-          leave: function(eventId) {
-            if (!oepAuth.user || !oepAuth.user.uid) {
-              return $q.reject(new Error('A user should be logged in to create an event.'));
+          profileInit: function(userSync) {
+            if (!userSync || !userSync.publicId) {
+              return $q.reject(new Error('The user has set his/her user id.'));
             }
 
-            return oepFirebaseSync([
-              'classMentors/eventParticipants',
-              eventId,
-              oepAuth.user.uid
-            ]).$set(false);
+            return oepFirebaseSync(['badgeTracker/userProfiles']).$set(userSync.publicId, {
+              user: {
+                displayName: userSync.displayName,
+                gravatar: userSync.gravatar
+              },
+              services: {}
+            }).then(function() {
+              return api.oep.profile(userSync.publicId);
+            });
           }
         }
       };
@@ -487,6 +470,10 @@
           var prf = 'SHA256';
 
           return {
+            md5: function(message) {
+              return CryptoJS.MD5(message);
+            },
+
             password: {
               /**
                * Return a hash for the password and options allowing
