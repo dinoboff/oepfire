@@ -26,7 +26,8 @@
    */
   constant('routes', {
     home: '/ranking',
-    profile: '/profile/:publicId?',
+    editProfile: '/profile',
+    profile: '/profile/:publicId',
     ranking: '/ranking'
   }).
 
@@ -269,11 +270,12 @@
   factory('oepDataStore', [
     '$q',
     '$log',
+    '$http',
     'oepFirebaseRef',
     'oepFirebaseSync',
     'oepAuth',
     'crypto',
-    function oepDataStoreFactory($q, $log, oepFirebaseRef, oepFirebaseSync, oepAuth, crypto) {
+    function oepDataStoreFactory($q, $log, $http, oepFirebaseRef, oepFirebaseSync, oepAuth, crypto) {
       var userData, userDataPromise, api;
 
       api = {
@@ -352,7 +354,7 @@
 
           publicId: function(userSync) {
             if (!userSync || !userSync.publicId) {
-              return $q.reject(new Error('The user has set his/her user id.'));
+              return $q.reject(new Error('The user has not set a user public id.'));
             }
 
             return oepFirebaseSync(['auth/publicIds']).$set(userSync.publicId, userSync.$id).then(function() {
@@ -381,18 +383,67 @@
 
           profileInit: function(userSync) {
             if (!userSync || !userSync.publicId) {
-              return $q.reject(new Error('The user has set his/her user id.'));
+              return $q.reject(new Error('The user has not set a user public id.'));
             }
 
-            return oepFirebaseSync(['badgeTracker/userProfiles']).$set(userSync.publicId, {
-              user: {
-                displayName: userSync.displayName,
-                gravatar: userSync.gravatar
-              },
-              services: {}
+            return oepFirebaseSync(
+              ['badgeTracker/userProfiles', userSync.publicId, 'user']
+            ).$set({
+              displayName: userSync.displayName,
+              gravatar: userSync.gravatar
             }).then(function() {
               return api.oep.profile(userSync.publicId);
             });
+          },
+
+          services: {
+            codeCombat: {
+              errServerError: new Error('Failed to get logged in user info from Code Combat.'),
+              errLoggedOff: new Error('The user is not logged in to Code Combat.'),
+              errNoName: new Error('The user hasn\'t set a name.'),
+
+              currentUser: function() {
+                return $http.jsonp('http://codecombat.com/auth/whoami?callback=JSON_CALLBACK').then(function(resp) {
+                  if (resp.data.anonymous) {
+                    return $q.reject(api.oep.services.codeCombat.errLoggedOff);
+                  }
+
+                  if (!resp.data.name) {
+                    return $q.reject(api.oep.services.codeCombat.errNoName);
+                  }
+
+                  return {
+                    id: resp.data._id,
+                    name: resp.data.name,
+                    points: resp.data.point,
+                    levels: resp.data.earned.levels
+                  };
+                }, function(e) {
+                  $log.error('Failed request to http://codecombat.com/auth/whoami: ' + e.toString());
+                  return $q.reject(api.oep.services.codeCombat.errServerError);
+                });
+              },
+
+              saveDetails: function(userSync, details) {
+                if (!userSync || !userSync.publicId) {
+                  return $q.reject(new Error('The user has not set a user public id.'));
+                }
+
+                return oepFirebaseSync(
+                  ['badgeTracker/servicesUserIds/codeCombat']
+                ).$set(details.id, userSync.publicId).then(function() {
+                  return oepFirebaseSync(
+                    ['badgeTracker/userProfiles', userSync.publicId, 'services/codeCombat']
+                  ).$set('details', {
+                    id: details.id,
+                    name: details.name,
+                    registeredBefore: {
+                      '.sv': 'timestamp'
+                    }
+                  });
+                });
+              }
+            }
           }
         }
       };
@@ -580,6 +631,26 @@
             }
           });
         }
+      };
+    }
+  ]).
+
+  filter('oepEmpty', [
+    function oepEmptyFactory() {
+      return function oepEmpty(obj) {
+        if (!obj) {
+          return true;
+        }
+
+        if (obj.hasOwnProperty('$value')) {
+          return obj.$value === null;
+        }
+
+        if (obj.length !== undefined) {
+          return obj.length === 0;
+        }
+
+        return Object.keys(obj).length === 0;
       };
     }
   ])

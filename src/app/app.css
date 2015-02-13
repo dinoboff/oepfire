@@ -28,3 +28,8 @@ footer > .container-fluid {
   padding-left: 15px;
   padding-right: 15px;
 }
+
+.has-success .input-group-btn .btn {
+  color: #3c763d;
+  border-color: #3c763d;
+}

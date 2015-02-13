@@ -53,8 +53,34 @@
             <h2>Code Combat</h2>
 
             <p>
-                <a href="http://codecombat.com/">Code Combat</a>, learn to Code JavaScript by Playing a Game.
+                <a href="http://codecombat.com/" target="_blank">Code Combat</a>, learn to Code JavaScript by Playing a Game.
             </p>
+
+            <form name="codeCombatRegisterForm" class="form-horizontal">
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="code-combat-name">Your username:</label>
+                    <div class="col-sm-10">
+                        <div class="input-group">
+                            <input
+                                type="text" class="form-control" id="code-combat-name"
+                                name="cc-username" placeholder="Your code combat user name"
+                                ng-model="ctrl.currentUser.publicId"
+                                ng-required="true"
+                                oep-bs-valid-class="true"
+                            />
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="button">Find it</button>
+                            </span>
+                        </div>
+                        <span class="text-warning" ng-messages="publicIdForm.publicId.$error">
+                            <span class="help-block" ng-message="required">A user name is required.</span>
+                            <span class="help-block" ng-message="minlength">A user name shouldn't be shorten than 3 characters.</span>
+                            <span class="help-block" ng-message="maxlength">A user name shouldn't be longer than 20 characters.</span>
+                            <span class="help-block" ng-message="pattern">A user name should only be composed of letter, numbers, '.' and '-'</span>
+                        </span>
+                    </div>
+                </div>
+            </form>
 
         </div>
 
@@ -62,7 +88,7 @@
             <h2>Code School</h2>
 
             <p>
-                <a href="https://www.codeschool.com/">Code School</a> teaches web technologies in the comfort of your browser with video lessons, coding challenges, and screencasts. Registering is free, and the provides free content to try out.
+                <a href="https://www.codeschool.com/" target="_blank">Code School</a> teaches web technologies in the comfort of your browser with video lessons, coding challenges, and screencasts. Registering is free, and the provides free content to try out.
             </p>
         </div>
 
@@ -70,7 +96,7 @@
             <h2>Treehouse</h2>
 
             <p>
-                Learn HTML, CSS, iPhone apps &amp; more at <a href="http://www.teamtreehouse.com/signup_code/singapore">Treehouse</a>. Treehouse offers a 14 days free trial.
+                Learn HTML, CSS, iPhone apps &amp; more at <a href="http://www.teamtreehouse.com/signup_code/singapore" target="_blank">Treehouse</a>. Treehouse offers a 14 days free trial.
             </p>
 
         </div>
