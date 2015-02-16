@@ -6,7 +6,7 @@
             <label class="col-sm-2 control-label" for="public-id">Your username:</label>
             <div class="col-sm-10">
                 <input type="text" class="form-control" id="public-id" name="publicId" placeholder="Pick a unique name" ng-model="ctrl.currentUser.publicId" ng-required="true" ng-minlength="3" ng-maxlength="20" pattern="^[-\.a-zA-z0-9]+$" oep-bs-valid-class="true" />
-                <span class="text-warning" ng-messages="publicIdForm.publicId.$error">
+                <span ng-messages="publicIdForm.publicId.$error">
                     <span class="help-block" ng-message="required">A user name is required.</span>
                     <span class="help-block" ng-message="minlength">A user name shouldn't be shorten than 3 characters.</span>
                     <span class="help-block" ng-message="maxlength">A user name shouldn't be longer than 20 characters.</span>
